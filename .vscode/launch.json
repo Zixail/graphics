@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "preLaunchTask": "build",
+  "configurations": [
+    {
+      "name": "Run app.exe",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}\\build\\app.exe",
+      "cwd": "${workspaceFolder}\\build",
+      "preLaunchTask": "build",
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:\\Program Files\\w64devkit\\bin\\gdb.exe"
+    }
+  ]
+}
