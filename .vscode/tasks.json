@@ -19,7 +19,7 @@
                 "-luser32",
                 "-lkernel32",
                 "-o",
-                "${workspaceFolder}\\build\\app.exe"
+                "${workspaceFolder}\\app.exe"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
