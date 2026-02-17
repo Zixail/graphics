@@ -7,42 +7,16 @@
 #include "utils.h"
 
 float projection[16];
-float g_zoom = 1.0f;
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
-    extern float g_zoom;
-    float zoomspeed = 0.1f;
-    g_zoom -= (float)yoffset * zoomspeed;
-
-    if(g_zoom < 0.1f) g_zoom = 0.1;
-    if(g_zoom > 10.0f) g_zoom = 10.0;
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    float aspect = (float)width / (float)height;
-
-    float bottom = -1.0f * g_zoom;
-    float top    =  1.0f * g_zoom;
-    float left   = -aspect * g_zoom;
-    float right  =  aspect * g_zoom;
-
-    float near   = -1.0f;
-    float far    =  1.0f;
-
-    makeOrtho(left, right, bottom, top, near, far, projection);
-}
 
 void buffersize_callback(GLFWwindow* window, int width, int height){
     glViewport(0, 0, width, height);
-
-    extern float g_zoom;
-
     float aspect = (float)width / (float)height;
 
-    float bottom = -1.0f *g_zoom;
-    float top = 1.0f * g_zoom;
+    float bottom = -1.0f;
+    float top = 1.0f;
 
-    float left = -aspect * g_zoom;
-    float right = aspect * g_zoom;
+    float left = -aspect;
+    float right = aspect;
 
     float near = -1.0f;
     float far = 1.0f;
@@ -108,7 +82,6 @@ int main(void){
     glfwSwapInterval(1);
     glfwSetKeyCallback(window, key_callback);
     glfwSetFramebufferSizeCallback(window, buffersize_callback);
-    glfwSetScrollCallback(window, scroll_callback);
 
     glViewport(0, 0, width, height);
 
@@ -121,11 +94,7 @@ int main(void){
 
         0.0f, 0.5f,     1.0f, 1.0f, 0.0f,
         0.5f, -0.5f,    1.0f, 0.0f, 1.0f,
-        0.0f, -0.5f,    0.0f, 1.0f, 1.0f,
-
-        0.0f, 0.5f,     0.5f, 0.2f, 0.6f,
-        -0.5f, -0.5f,     0.8f, 0.9f, 0.3f,
-        0.5f, -0.5f,     0.7f, 0.1f, 0.4f
+        0.0f, -0.5f,     0.0f, 1.0f, 1.0f
     };
 
     GLuint VAO, VBO;
@@ -164,9 +133,8 @@ int main(void){
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
 
-    Transform triangleT1, viewTr, triangleT2;
-    transformInit(&triangleT1);
-    transformInit(&triangleT2);
+    Transform modelTr, viewTr;
+    transformInit(&modelTr);
     transformInit(&viewTr);
 
     extern float projection[16];
@@ -176,80 +144,29 @@ int main(void){
     GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
     GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
 
-    float lineVertices[] = {
-        -1.75f, 0.75f,      1.0f, 1.0f, 1.0f,
-        0.75f, -1.75f,      1.0f, 0.5f, 0.0f,
-
-        -0.75f, 0.00f,      0.0f, 0.3f, 0.2f,
-        0.75f,  0.00f,      0.5f, 0.3f, 0.2f
-    };
-
-    GLuint lineVAO, lineVBO;
-    glGenVertexArrays(1, &lineVAO);
-    glGenBuffers(1, &lineVBO);
-
-    glBindVertexArray(lineVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(lineVertices), lineVertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(sizeof(2)));
-    glEnableVertexAttribArray(1);
-
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    Transform lineBack, lineFront;
-    transformInit(&lineBack);
-    transformInit(&lineFront);
-
-    lineBack.z = -0.2f;
-    lineFront.z = 0.2f;
-
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
     while(!glfwWindowShouldClose(window)){
         glfwPollEvents();
 
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, viewTr.model);
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection);
-
-        triangleT1.rotationZ = glfwGetTime();
-        triangleT1.x = cosf(triangleT1.rotationZ) / 2;
-        triangleT1.y = sinf(triangleT1.rotationZ) / 2;
-
-        triangleT2.rotationZ = glfwGetTime();
-        triangleT2.x = cosf(triangleT2.rotationZ) / 2 + 5;
-        triangleT2.y = sinf(triangleT2.rotationZ) / 2 + 2.5;
+        modelTr.rotationZ = glfwGetTime();
+        modelTr.x = cosf(modelTr.rotationZ) / 2;
+        modelTr.y = sinf(modelTr.rotationZ) / 2;
 
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shaderProgram);
 
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, lineBack.model);
-        glBindVertexArray(lineVAO);
-        glDrawArrays(GL_LINES, 2, 4);
-
-        transformUpdateModel(&triangleT1);
+        transformUpdateModel(&modelTr);
         transformUpdateModel(&viewTr);
 
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, triangleT1.model);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, modelTr.model);
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, viewTr.model);
+        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection);
+
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        transformUpdateModel(&triangleT2);
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, triangleT2.model);
-        glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 6, 9);
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, lineFront.model);
-        glBindVertexArray(lineVAO);
-        glDrawArrays(GL_LINES, 0, 2);
 
         glfwSwapBuffers(window);
     }
