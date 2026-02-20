@@ -11,15 +11,31 @@ float projection[16];
 float zoom = 1.0f;
 
 double lastUpdateTime = 0.0;
-const double UPDATE_INTERVAL = 0.1;
+double updateInterval = 0.1;
 
 GLuint maskTex;
 unsigned char* textureData = NULL;
 int textureWidth, textureHeight;
 
+char freeze = 0;
+
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mod){
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
         glfwSetWindowShouldClose(window, 1);
+    }
+    if(key == GLFW_KEY_SPACE && action == GLFW_PRESS){
+        extern char freeze;
+        freeze = !freeze;
+    }
+    if(key == GLFW_KEY_Z && action == GLFW_PRESS){
+        extern double updateInterval;
+        updateInterval *= (double)2;
+        if (updateInterval > 1.6f) updateInterval = 1.6f;
+    }
+    if(key == GLFW_KEY_X && action == GLFW_PRESS){
+        extern double updateInterval;
+        updateInterval /= (double)2;
+        if (updateInterval < 0.0125f) updateInterval = 0.0125f;
     }
 }
 
@@ -93,7 +109,7 @@ int main(void){
     extern unsigned char* textureData;
     extern int textureWidth, textureHeight;
 
-    fieldInit(50, 50);
+    fieldInit(30, 30);
     loadSample();
     textureWidth = Field.width;
     textureHeight = Field.height;
@@ -179,19 +195,19 @@ int main(void){
     transformInit(&qModel);
     transformInit(&qView);
 
-    int count = Field.width + 1;
-    float* lines = calloc(8 * count, sizeof(float));
+    int count = (Field.width + Field.height) + 2;
+    float* lines = calloc(4 * count, sizeof(float));
     float dx = (gridRight - gridLeft) / textureWidth;
     float dy = (gridTop - gridBot) / textureHeight;
-    for (int i = 0; i < count; ++i){
+    for (int i = 0; i <= Field.width; ++i){
         lines[i * 4 + 0] = gridLeft + i * dx;
         lines[i * 4 + 1] = gridTop;
         lines[i * 4 + 2] = gridLeft + i * dx;
         lines[i * 4 + 3] = gridBot;
     }
 
-    for (int i = 0; i < count; ++i){
-        int base = count + i;
+    for (int i = 0; i <= Field.height; ++i){
+        int base = Field.width + i + 1;
         lines[base * 4 + 0] = gridLeft;
         lines[base * 4 + 1] = gridBot + i * dy;
         lines[base * 4 + 2] = gridRight;
@@ -205,12 +221,13 @@ int main(void){
 
     glBindVertexArray(lineVAO);
     glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
-    glBufferData(GL_ARRAY_BUFFER, 8 * count * sizeof(float), (void*)lines, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 4 * count * sizeof(float), (void*)lines, GL_STATIC_DRAW);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     extern float projection[16];
+    extern char freeze;
 
 
     float identity[16] = {0};
@@ -222,7 +239,7 @@ int main(void){
 
         double currentTime = glfwGetTime();
 
-        if(currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
+        if(freeze && currentTime - lastUpdateTime >= updateInterval) {
             updateField();  
             lastUpdateTime = currentTime;
         }
@@ -260,7 +277,7 @@ int main(void){
 
         glUniform1i(uModeLoc, 1);
         glBindVertexArray(lineVAO);
-        glDrawArrays(GL_LINES, 0, count * 8);
+        glDrawArrays(GL_LINES, 0, count * 2);
 
         glUniform1i(uModeLoc, 0);
 
