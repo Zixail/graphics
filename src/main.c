@@ -1,117 +1,156 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
-
 #include "transform.h"
 #include "utils.h"
+#include "life.h"
 
 float projection[16];
-float gZoom = 1.0f;
+float zoom = 1.0f;
 
+double lastUpdateTime = 0.0;
+const double UPDATE_INTERVAL = 0.1;
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
+GLuint maskTex;
+unsigned char* textureData = NULL;
+int textureWidth, textureHeight;
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mod){
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
         glfwSetWindowShouldClose(window, 1);
     }
 }
 
-void buffersize_callback(GLFWwindow* window, int width, int height){
+void buffersizeCallback(GLFWwindow* window, int width, int height){
     glViewport(0, 0, width, height);
-
-    extern float projection[];
-    extern float gZoom;
+    extern float zoom;
 
     float aspect = (float)width / (float)height;
 
-    float bottom = -1.0f * gZoom;
-    float top = 1.0f * gZoom;
+    float bottom = -1.0f * zoom;
+    float top = 1.0f * zoom;
 
-    float left = -aspect * gZoom;
-    float right = aspect * gZoom;
+    float left = -aspect * zoom;
+    float right = aspect * zoom;
 
-    float near = 1.0f;
-    float far = -1.0f;
+    float near = -1.0f;
+    float far = 1.0f;
 
+    extern float projection[16];
     makeOrtho(left, right, bottom, top, near, far, projection);
+
+    //
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
-    extern float gZoom;
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset){
+    extern float zoom;
     float zoomSpeed = 0.1f;
-    gZoom -= yoffset * zoomSpeed;
-    if(gZoom < 0.1f) gZoom = 0.1f;
-    if(gZoom > 10.0f) gZoom = 10.0f;
-
+    zoom -= (float)yoffset *zoomSpeed;
+    if (zoom < 0.1f) zoom = 0.1f;
+    if (zoom > 10.0f) zoom = 10.0f;
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
-    buffersize_callback(window, width, height);
+    buffersizeCallback(window, width, height);
 }
 
 int main(void){
 
     if(!glfwInit()){
-        printf("glfw error!\n");
+        printf("glfw error");
         return -1;
     }
 
-    int width = 1024;
-    int height = 768;
-
-    GLFWwindow* window = glfwCreateWindow(width, height, "Test", NULL, NULL);
-
+    GLFWwindow* window = glfwCreateWindow(1024, 768, "Test", NULL, NULL);
     if(!window){
-        printf("window error!\n");
+        printf("window error");
         glfwTerminate();
         return -2;
     }
 
     glfwMakeContextCurrent(window);
 
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
-        printf("glad error!\n");
+    if(!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)){
+        printf("glad error");
         glfwDestroyWindow(window);
         glfwTerminate();
-        return -2;
+        return -3;
     }
 
     glfwSwapInterval(1);
-    glViewport(0, 0, 1024, 768);
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glfwSetKeyCallback(window, keyCallback);
+    glfwSetFramebufferSizeCallback(window, buffersizeCallback);
+    buffersizeCallback(window, 1024, 768);
+    glfwSetScrollCallback(window, scrollCallback);
+    glClearColor(0.0f, 0.749f, 1.0f, 1.0f);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetFramebufferSizeCallback(window ,buffersize_callback);
-    glfwSetScrollCallback(window, scroll_callback);
-    buffersize_callback(window, 1024, 768);
+    extern GLuint maskTex;
+    extern unsigned char* textureData;
+    extern int textureWidth, textureHeight;
 
-    
-    float triangles[] = {
-        0.0f, 0.3f,     0.5f, 0.7f, 0.2f,
-        -0.3f, -0.3f,     0.7f, 0.2f, 0.5f,
-        0.3f, -0.3f,     0.2f, 0.5f, 0.7f,
+    fieldInit(50, 50);
+    loadSample();
+    textureWidth = Field.width;
+    textureHeight = Field.height;
+    textureData = malloc(textureWidth * textureHeight * 4); 
+
+    glGenTextures(1, &maskTex);
+    glBindTexture(GL_TEXTURE_2D, maskTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+
+
+    float gridTop =  1.0f * textureHeight / 20;
+    float gridBot = -1.0f * textureHeight / 20;
+    float gridRight =  1.0f * textureWidth / 20;
+    float gridLeft =  -1.0f * textureWidth / 20;
+
+    float quads[] = {
+        gridLeft, gridBot,  0.0f, 1.0f,
+        gridRight, gridBot,  1.0f, 1.0f,
+        gridRight,  gridTop,  1.0f, 0.0f,
+        gridLeft,  gridTop,  0.0f, 0.0f
     };
 
-    GLuint trVAO, trVBO;
+    unsigned int indices[] = { 
+        0,  1,  2,    
+        0,  2,  3    
+    };
 
-    glGenVertexArrays(1, &trVAO);
-    glGenBuffers(1, &trVBO);
+    GLuint qVAO, qVBO, qEBO;
 
-    glBindVertexArray(trVAO);
+    glGenVertexArrays(1, &qVAO);
+    glGenBuffers(1, &qVBO);
+    glGenBuffers(1, &qEBO);
 
-    glBindBuffer(GL_ARRAY_BUFFER, trVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(triangles), triangles, GL_STATIC_DRAW);
+    glBindVertexArray(qVAO);
 
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glBindBuffer(GL_ARRAY_BUFFER, qVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quads), quads, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, qEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    const char* vertexShaderSource = loadFile("shaders/TransWorldTriangle5.vert");
-    const char* fragmentShaderSource = loadFile("shaders/SimpleTriangle5.frag");
+    const char* vertexShaderSource = loadFile("shaders/life.vert");
+    const char* fragmentShaderSource = loadFile("shaders/life.frag");
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
@@ -121,60 +160,122 @@ int main(void){
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
 
-    GLuint shaderProgram = glCreateProgram();
+    GLint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
-
-    Transform triangleT, lineT, viewT;
-    transformInit(&triangleT);
-    transformInit(&lineT);
-
-    transformInit(&viewT);
-    
-    extern float projection[];
-
-    GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
-    GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
-    GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-
-
-    float lines[] = {
-        -0.75f, 0.2f,     0.4f, 0.3f, 0.7f,
-        0.4f, -0.25f,     0.1f, 0.5f, 0.2f,
-    };
-
 
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    while(!glfwWindowShouldClose(window)){
-        glfwPollEvents();
-        glClear(GL_COLOR_BUFFER_BIT);
+    GLint uMaskLoc = glGetUniformLocation(shaderProgram, "uMask");
+    GLint projLoc = glGetUniformLocation(shaderProgram, "projection");
+    GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
+    GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
+    GLint uModeLoc = glGetUniformLocation(shaderProgram, "uMode");
 
-        glUseProgram(shaderProgram);
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, viewT.model);
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection);
-        
-        triangleT.rotationZ = glfwGetTime();
-        triangleT.x = cosf(glfwGetTime()) / 5;
-        triangleT.y = sinf(glfwGetTime()) / 5;
+    Transform qModel, qView;
+    transformInit(&qModel);
+    transformInit(&qView);
 
-        transformUpdateModel(&triangleT);
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, triangleT.model);
-
-        glBindVertexArray(trVAO);
-        
-
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-
-        glfwSwapBuffers(window);
+    int count = Field.width + 1;
+    float* lines = calloc(8 * count, sizeof(float));
+    float dx = (gridRight - gridLeft) / textureWidth;
+    float dy = (gridTop - gridBot) / textureHeight;
+    for (int i = 0; i < count; ++i){
+        lines[i * 4 + 0] = gridLeft + i * dx;
+        lines[i * 4 + 1] = gridTop;
+        lines[i * 4 + 2] = gridLeft + i * dx;
+        lines[i * 4 + 3] = gridBot;
     }
 
+    for (int i = 0; i < count; ++i){
+        int base = count + i;
+        lines[base * 4 + 0] = gridLeft;
+        lines[base * 4 + 1] = gridBot + i * dy;
+        lines[base * 4 + 2] = gridRight;
+        lines[base * 4 + 3] = gridBot + i * dy;
+    }
+
+    GLuint lineVAO, lineVBO;
+
+    glGenVertexArrays(1, &lineVAO);
+    glGenBuffers(1, &lineVBO);
+
+    glBindVertexArray(lineVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, lineVBO);
+    glBufferData(GL_ARRAY_BUFFER, 8 * count * sizeof(float), (void*)lines, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    extern float projection[16];
+
+
+    float identity[16] = {0};
+    identity[0] = identity[5] = identity[10] = identity[15] = 1.0f;
+
+    while(!glfwWindowShouldClose(window)){
+        glfwPollEvents();                
+        glClear(GL_COLOR_BUFFER_BIT);      
+
+        double currentTime = glfwGetTime();
+
+        if(currentTime - lastUpdateTime >= UPDATE_INTERVAL) {
+            updateField();  
+            lastUpdateTime = currentTime;
+        }
+
+        for(int i = 0; i < textureHeight; i++) {
+            for(int j = 0; j < textureWidth; j++) {
+                int fieldIdx = i * textureWidth + j;
+                unsigned char cell = Field.current[fieldIdx];
+                
+                int texIdx = (i * textureWidth + j) * 4;
+                if (cell == 0){
+                    textureData[texIdx + 0] = 255; 
+                    textureData[texIdx + 1] = 255;
+                    textureData[texIdx + 2] = 255; 
+                    textureData[texIdx + 3] = 0; 
+                }
+                else{
+                    textureData[texIdx + 0] = 0;  
+                    textureData[texIdx + 1] = 0;  
+                    textureData[texIdx + 2] = 0;   
+                    textureData[texIdx + 3] = 255; 
+                }
+            }
+        }
+
+        
+        glBindTexture(GL_TEXTURE_2D, maskTex);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGBA, GL_UNSIGNED_BYTE, textureData);
+        glUseProgram(shaderProgram);
+
+        glUniform1i(uMaskLoc, 0);
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, identity);
+        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, identity);
+
+        glUniform1i(uModeLoc, 1);
+        glBindVertexArray(lineVAO);
+        glDrawArrays(GL_LINES, 0, count * 8);
+
+        glUniform1i(uModeLoc, 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, maskTex);
+        glBindVertexArray(qVAO);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+        
+        glfwSwapBuffers(window);             
+    }
+
+    glDeleteProgram(shaderProgram);
     glfwDestroyWindow(window);
     glfwTerminate();
-
+    
     return 0;
 }
