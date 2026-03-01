@@ -4,12 +4,12 @@ in vec4 vColor;
 
 out vec4 FragColor;
 
-uniform sampler2D uMask;
-uniform int uMode;
+uniform sampler2D mask;
+uniform int mode;
 
 void main() {
-    if (uMode == 0){
-        FragColor = texture(uMask, vUV);
+    if (mode == 0){
+        FragColor = texture(mask, vUV);
     } 
     else {
         FragColor = vColor;

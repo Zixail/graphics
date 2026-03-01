@@ -6,7 +6,7 @@ layout (location = 2) in vec4 aColor; //Цвета для линий/фигур
 uniform mat4 projection; // Проекция
 uniform mat4 view;  //  Камера
 uniform mat4 model; //  Модель
-uniform int uMode; // 0 - текстура, 1 - цвет
+uniform int mode; // 0 - текстура, 1 - цвет
 
 out vec2 vUV;
 out vec4 vColor;
