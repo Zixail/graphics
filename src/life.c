@@ -49,7 +49,7 @@ void loadSample(){
     Field.current[7 * Field.width + 4] = 1;
 }
 
-void fieldInit(int width, int height){
+void initField(int width, int height){
     Field.width = width;
     Field.height = height;
     Field.current = (char*)calloc(Field.width * Field.height, sizeof(char));

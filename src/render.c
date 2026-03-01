@@ -5,8 +5,8 @@
 #include "transform.h"
 #include "life.h"
 
-struct _quad Quad;
-struct _grid Grid;
+struct quad Quad;
+struct grid Grid;
 struct shader mShader;
 
 extern Projection proj;

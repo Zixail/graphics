@@ -103,7 +103,7 @@ void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
 void processMouseClick(GLFWwindow* window, int action){
     extern Projection proj;
     extern int textureWidth, textureHeight;
-    extern struct _grid Grid;
+    extern struct grid Grid;
 
     double xpos, ypos;                
     glfwGetCursorPos(window, &xpos, &ypos);                

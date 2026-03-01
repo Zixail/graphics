@@ -9,7 +9,7 @@
 #include "life.h"
 #include "input.h"
 
-extern struct _quad Quad;
+extern struct quad Quad;
 extern struct _grid Grid;
 extern struct shader mShader;
 
@@ -38,7 +38,7 @@ int main(void){
 
     setCallback(window);
 
-    fieldInit(50, 50);
+    initField(50, 50);
     loadSample();
     gridInit();
     quadInit();

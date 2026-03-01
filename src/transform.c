@@ -11,7 +11,7 @@ typedef struct Transform {
     float mat[16];
 } Transform;
 
-void transformInit(Transform* t){
+void initTransform(Transform* t){
     t->x = t->y = 0.0f;
     t->rotationZ = 0.0f;
     t->sx = t-> sy = 1.0f;
@@ -25,7 +25,7 @@ void transformInit(Transform* t){
 
 Projection proj;
 
-void transformUpdateModel(Transform* t){
+void updateTransform(Transform* t){
     float x = t->x;
     float y = t->y;
 

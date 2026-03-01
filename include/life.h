@@ -17,6 +17,6 @@ void printField();
 
 void loadSample();
 
-void fieldInit(int width, int height);
+void initField(int width, int height);
 
 #endif

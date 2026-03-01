@@ -12,8 +12,8 @@ typedef struct Transform {
     float model[16];
 } Transform;
 
-void transformInit(Transform* t);
-void transformUpdateModel(Transform* t);
+void initTransform(Transform* t);
+void updateTransform(Transform* t);
 
 void makeOrtho(float left, float right, 
                 float bottom, float top, 

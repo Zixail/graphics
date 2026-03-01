@@ -1,14 +1,14 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-struct _grid{
+struct grid{
     float top, bot;
     float right, left;
     GLuint VAO, VBO;
     int count;
 };
 
-struct _quad{
+struct quad{
     float vert[16];
     unsigned int ind[6];
     GLuint VAO, VBO, EBO;
