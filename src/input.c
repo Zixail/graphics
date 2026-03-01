@@ -83,7 +83,7 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset){
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods){
-    if (action == GLFW_PRESS || action == GLFW_REPEAT) { // Используем REPEAT для зажатия
+    if (action == GLFW_PRESS || action == GLFW_REPEAT) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {                
             processMouseClick(window, 1);               
         } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {                
@@ -114,11 +114,11 @@ void processMouseClick(GLFWwindow* window, int action){
     float x = (2.0f * (float)xpos) / (float)width - 1.0f;                
     float y = (2.0f * (float)ypos) / (float)height - 1.0f;
 
-    float invProj[16];                
-    invertOrtho(proj.mat, invProj);                
+    Projection invProj;                
+    invertOrtho(&proj, &invProj);                
 
-    float worldX = x * invProj[0] + y * invProj[4] + invProj[12];                
-    float worldY = x * invProj[1] + y * invProj[5] + invProj[13];                
+    float worldX = x * invProj.mat[0] + y * invProj.mat[4] + invProj.mat[12];                
+    float worldY = x * invProj.mat[1] + y * invProj.mat[5] + invProj.mat[13];                
 
     int cellX = (int)((worldX - Grid.left) / ((Grid.right - Grid.left) / textureWidth));                
     int cellY = (int)((worldY - Grid.bot) / ((Grid.top - Grid.bot) / textureHeight));                

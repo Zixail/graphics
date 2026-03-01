@@ -19,6 +19,6 @@ void makeOrtho(float left, float right,
                 float bottom, float top, 
                 float near, float far, float* m);
 
-void invertOrtho(float* m, float* inv);
+void invertOrtho(Projection* proj, Projection* i);
 
 #endif

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "life.h"
 
-struct life_field Field;
+struct field Field;
 
 int countNeighbors(int x0, int y0){
     int count = 0 - Field.current[y0 * Field.width + x0];

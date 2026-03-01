@@ -38,14 +38,11 @@ int main(void){
 
     setCallback(window);
 
-    fieldInit(30, 30);
+    fieldInit(50, 50);
     loadSample();
     gridInit();
     quadInit();
     programCreate();
-
-    float identity[16] = {0};
-    identity[0] = identity[5] = identity[10] = identity[15] = 1.0f;
 
     while(!glfwWindowShouldClose(window)){
         glfwPollEvents();                

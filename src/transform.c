@@ -55,7 +55,9 @@ void makeOrtho(float left, float right, float bottom, float top, float near, flo
     m[12] = -(right + left) / rl;  m[13] = -(top + bottom) / tb;  m[14] = -(far + near) / fn;  m[15] = 1.0f;
 }
 
-void invertOrtho(float* m, float* inv) {
+void invertOrtho(Projection* proj, Projection* i) {
+    float* m = proj->mat;
+    float* inv = i->mat;
     inv[0] = 1.0f / m[0];      inv[1] = 0.0f;             inv[2] = 0.0f;              inv[3] = 0.0f;                
     inv[4] = 0.0f;             inv[5] = 1.0f / m[5];      inv[6] = 0.0f;              inv[7] = 0.0f;                
     inv[8] = 0.0f;             inv[9] = 0.0f;             inv[10] = 1.0f / m[10];     inv[11] = 0.0f;                
