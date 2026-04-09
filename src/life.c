@@ -55,3 +55,12 @@ void initField(int width, int height){
     Field.current = (char*)calloc(Field.width * Field.height, sizeof(char));
     Field.next = (char*)calloc(Field.width * Field.height, sizeof(char));
 }
+
+void freeField(){
+    free(Field.current);
+    free(Field.next);
+    Field.current = NULL;
+    Field.next = NULL;
+    Field.width = 0;
+    Field.height = 0;
+}

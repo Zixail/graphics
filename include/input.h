@@ -11,5 +11,6 @@ void setWindowImage(GLFWwindow* window);
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos);
 void processMouseClick(GLFWwindow* window, int action);
+void updateCamera(GLFWwindow* window, float deltaTime);
 
 #endif

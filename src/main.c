@@ -44,9 +44,17 @@ int main(void){
     quadInit();
     programCreate();
 
+    double lastFrameTime = glfwGetTime();
+
     while(!glfwWindowShouldClose(window)){
+        double currentFrameTime = glfwGetTime();
+        float deltaTime = (float)(currentFrameTime - lastFrameTime);
+        lastFrameTime = currentFrameTime;
+
         glfwPollEvents();                
         glClear(GL_COLOR_BUFFER_BIT);      
+
+        updateCamera(window, deltaTime);
 
         if(!isFreeze()) {
             updateField();  
@@ -62,6 +70,8 @@ int main(void){
         glfwSwapBuffers(window);             
     }
 
+    cleanupRenderResources();
+    freeField();
     glDeleteProgram(mShader.program);
     glfwDestroyWindow(window);
     glfwTerminate();

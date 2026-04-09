@@ -9,12 +9,53 @@
 #include "life.h"
 
 float zoom = 1.0f;
+float cameraX = 0.0f;
+float cameraY = 0.0f;
 double lastUpdateTime = 0.0;
 double updateInterval = 0.1;
 char freeze = 0;
 char isLeftMouseButtonPressed = 0;
 char isFullscreen = 0;
 int windowedX, windowedY, windowedWidth, windowedHeight;
+
+static float clampFloat(float value, float minValue, float maxValue) {
+    if (value < minValue) return minValue;
+    if (value > maxValue) return maxValue;
+    return value;
+}
+
+static void clampCameraToGrid(float aspect) {
+    extern struct grid Grid;
+    const float edgePaddingRatio = 0.12f;
+
+    float padX = (Grid.right - Grid.left) * edgePaddingRatio;
+    float padY = (Grid.top - Grid.bot) * edgePaddingRatio;
+
+    float extendedLeft = Grid.left - padX;
+    float extendedRight = Grid.right + padX;
+    float extendedBot = Grid.bot - padY;
+    float extendedTop = Grid.top + padY;
+
+    float halfWidth = aspect * zoom;
+    float halfHeight = zoom;
+
+    float minCameraX = extendedLeft + halfWidth;
+    float maxCameraX = extendedRight - halfWidth;
+    float minCameraY = extendedBot + halfHeight;
+    float maxCameraY = extendedTop - halfHeight;
+
+    if (minCameraX > maxCameraX) {
+        cameraX = 0.5f * (Grid.left + Grid.right);
+    } else {
+        cameraX = clampFloat(cameraX, minCameraX, maxCameraX);
+    }
+
+    if (minCameraY > maxCameraY) {
+        cameraY = 0.5f * (Grid.bot + Grid.top);
+    } else {
+        cameraY = clampFloat(cameraY, minCameraY, maxCameraY);
+    }
+}
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mod){
     if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
@@ -55,14 +96,21 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 void buffersizeCallback(GLFWwindow* window, int width, int height){
     glViewport(0, 0, width, height);
     extern float zoom;
+    extern float cameraX;
+    extern float cameraY;
+
+    if (height == 0) {
+        return;
+    }
 
     float aspect = (float)width / (float)height;
+    clampCameraToGrid(aspect);
 
-    float bottom = -1.0f * zoom;
-    float top = 1.0f * zoom;
+    float bottom = cameraY - zoom;
+    float top = cameraY + zoom;
 
-    float left = -aspect * zoom;
-    float right = aspect * zoom;
+    float left = cameraX - aspect * zoom;
+    float right = cameraX + aspect * zoom;
 
     float near = -1.0f;
     float far = 1.0f;
@@ -77,6 +125,38 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset){
     zoom -= (float)yoffset *zoomSpeed;
     if (zoom < 0.1f) zoom = 0.1f;
     if (zoom > 10.0f) zoom = 10.0f;
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    buffersizeCallback(window, width, height);
+}
+
+void updateCamera(GLFWwindow* window, float deltaTime) {
+    extern float cameraX;
+    extern float cameraY;
+    extern float zoom;
+
+    float dirX = 0.0f;
+    float dirY = 0.0f;
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) dirY += 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) dirY -= 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) dirX += 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) dirX -= 1.0f;
+
+    if (dirX == 0.0f && dirY == 0.0f) {
+        return;
+    }
+
+    if (dirX != 0.0f && dirY != 0.0f) {
+        const float invSqrt2 = 0.70710678f;
+        dirX *= invSqrt2;
+        dirY *= invSqrt2;
+    }
+
+    float moveSpeed = 2.0f * zoom;
+    cameraX += dirX * moveSpeed * deltaTime;
+    cameraY += dirY * moveSpeed * deltaTime;
+
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     buffersizeCallback(window, width, height);
@@ -108,11 +188,20 @@ void processMouseClick(GLFWwindow* window, int action){
     double xpos, ypos;                
     glfwGetCursorPos(window, &xpos, &ypos);                
 
-    int width, height;                
-    glfwGetWindowSize(window, &width, &height);                
+    int windowWidth, windowHeight;
+    int framebufferWidth, framebufferHeight;
+    glfwGetWindowSize(window, &windowWidth, &windowHeight);
+    glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
 
-    float x = (2.0f * (float)xpos) / (float)width - 1.0f;                
-    float y = (2.0f * (float)ypos) / (float)height - 1.0f;
+    if (windowWidth <= 0 || windowHeight <= 0 || framebufferWidth <= 0 || framebufferHeight <= 0) {
+        return;
+    }
+
+    float scaledX = (float)xpos * ((float)framebufferWidth / (float)windowWidth);
+    float scaledY = (float)ypos * ((float)framebufferHeight / (float)windowHeight);
+
+    float x = (2.0f * scaledX) / (float)framebufferWidth - 1.0f;
+    float y = 1.0f - (2.0f * scaledY) / (float)framebufferHeight;
 
     Projection invProj;                
     invertOrtho(&proj, &invProj);                
@@ -120,8 +209,8 @@ void processMouseClick(GLFWwindow* window, int action){
     float worldX = x * invProj.mat[0] + y * invProj.mat[4] + invProj.mat[12];                
     float worldY = x * invProj.mat[1] + y * invProj.mat[5] + invProj.mat[13];                
 
-    int cellX = (int)((worldX - Grid.left) / ((Grid.right - Grid.left) / textureWidth));                
-    int cellY = (int)((worldY - Grid.bot) / ((Grid.top - Grid.bot) / textureHeight));                
+    int cellX = (int)((worldX - Grid.left) / ((Grid.right - Grid.left) / textureWidth));
+    int cellY = (int)((Grid.top - worldY) / ((Grid.top - Grid.bot) / textureHeight));
 
     if (cellX >= 0 && cellX < textureWidth && cellY >= 0 && cellY < textureHeight) {                
         int index = cellY * textureWidth + cellX;                

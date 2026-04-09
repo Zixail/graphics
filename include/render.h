@@ -31,5 +31,6 @@ void updateMat();
 void updateTexture();
 void renderGrid();
 void renderTexture();
+void cleanupRenderResources();
 
 #endif

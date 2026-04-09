@@ -19,4 +19,6 @@ void loadSample();
 
 void initField(int width, int height);
 
+void freeField();
+
 #endif

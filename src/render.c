@@ -72,6 +72,8 @@ void gridInit(){
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    free(lines);
 }
 
 void quadInit(){
@@ -116,15 +118,23 @@ void quadInit(){
 }
 
 void programCreate(){
-    const char* vertexShaderSource = readShader("shaders/life.vert");
-    const char* fragmentShaderSource = readShader("shaders/life.frag");
+    char* vertexShaderSource = readShader("shaders/life.vert");
+    char* fragmentShaderSource = readShader("shaders/life.frag");
+
+    if (!vertexShaderSource || !fragmentShaderSource) {
+        free(vertexShaderSource);
+        free(fragmentShaderSource);
+        return;
+    }
 
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    const char* vertexShaderSourcePtr = vertexShaderSource;
+    glShaderSource(vertexShader, 1, &vertexShaderSourcePtr, NULL);
     glCompileShader(vertexShader);
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    const char* fragmentShaderSourcePtr = fragmentShaderSource;
+    glShaderSource(fragmentShader, 1, &fragmentShaderSourcePtr, NULL);
     glCompileShader(fragmentShader);
 
     mShader.program = glCreateProgram();
@@ -134,6 +144,9 @@ void programCreate(){
 
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
+
+    free(vertexShaderSource);
+    free(fragmentShaderSource);
 
     mShader.mask = glGetUniformLocation(mShader.program, "mask");
     mShader.projection = glGetUniformLocation(mShader.program, "projection");
@@ -188,4 +201,36 @@ void renderTexture(){
     glBindVertexArray(Quad.VAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+}
+
+void cleanupRenderResources(){
+    if (maskTex != 0) {
+        glDeleteTextures(1, &maskTex);
+        maskTex = 0;
+    }
+
+    if (Grid.VBO != 0) {
+        glDeleteBuffers(1, &Grid.VBO);
+        Grid.VBO = 0;
+    }
+    if (Grid.VAO != 0) {
+        glDeleteVertexArrays(1, &Grid.VAO);
+        Grid.VAO = 0;
+    }
+
+    if (Quad.EBO != 0) {
+        glDeleteBuffers(1, &Quad.EBO);
+        Quad.EBO = 0;
+    }
+    if (Quad.VBO != 0) {
+        glDeleteBuffers(1, &Quad.VBO);
+        Quad.VBO = 0;
+    }
+    if (Quad.VAO != 0) {
+        glDeleteVertexArrays(1, &Quad.VAO);
+        Quad.VAO = 0;
+    }
+
+    free(textureData);
+    textureData = NULL;
 }
