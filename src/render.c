@@ -5,15 +5,15 @@
 #include "transform.h"
 #include "life.h"
 
-struct quad Quad;
-struct grid Grid;
-struct shader mShader;
+struct render_state Render = {0};
 
-extern Projection proj;
-
-GLuint maskTex;
-unsigned char* textureData = NULL;
-int textureWidth, textureHeight;
+#define Quad Render.quad
+#define Grid Render.grid
+#define mShader Render.shader
+#define maskTex Render.maskTex
+#define textureData Render.textureData
+#define textureWidth Render.textureWidth
+#define textureHeight Render.textureHeight
 
 float identity[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
@@ -182,8 +182,9 @@ void updateTexture(){
 }
 
 void updateMat(){
+    Projection* proj = getProjection();
     glUniform1i(mShader.mask, 0);
-    glUniformMatrix4fv(mShader.projection, 1, GL_FALSE, proj.mat);
+    glUniformMatrix4fv(mShader.projection, 1, GL_FALSE, proj->mat);
     glUniformMatrix4fv(mShader.model, 1, GL_FALSE, identity);
     glUniformMatrix4fv(mShader.view, 1, GL_FALSE, identity);
 }

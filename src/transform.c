@@ -1,15 +1,5 @@
 #include <math.h>
-
-typedef struct Projection {
-    float mat[16];
-} Projection;
-
-typedef struct Transform {
-    float x, y;
-    float rotationZ;
-    float sx, sy;
-    float mat[16];
-} Transform;
+#include "transform.h"
 
 void initTransform(Transform* t){
     t->x = t->y = 0.0f;
@@ -23,7 +13,11 @@ void initTransform(Transform* t){
     m[12] = 0.0f; m[13] = 0.0f;  m[14] = 0.0f;  m[15] = 1.0f;
 }
 
-Projection proj;
+static Projection proj;
+
+Projection* getProjection(){
+    return &proj;
+}
 
 void updateTransform(Transform* t){
     float x = t->x;

@@ -9,10 +9,6 @@
 #include "life.h"
 #include "input.h"
 
-extern struct quad Quad;
-extern struct _grid Grid;
-extern struct shader mShader;
-
 int main(void){
 
     if(!glfwInit()){
@@ -60,7 +56,7 @@ int main(void){
             updateField();  
         }
 
-        glUseProgram(mShader.program);
+        glUseProgram(Render.shader.program);
         updateMat();
         updateTexture();
 
@@ -72,7 +68,7 @@ int main(void){
 
     cleanupRenderResources();
     freeField();
-    glDeleteProgram(mShader.program);
+    glDeleteProgram(Render.shader.program);
     glfwDestroyWindow(window);
     glfwTerminate();
     

@@ -9,7 +9,7 @@ typedef struct Transform {
     float x, y;
     float rotationZ;
     float sx, sy;
-    float model[16];
+    float mat[16];
 } Transform;
 
 void initTransform(Transform* t);
@@ -17,8 +17,9 @@ void updateTransform(Transform* t);
 
 void makeOrtho(float left, float right, 
                 float bottom, float top, 
-                float near, float far, float* m);
+                float near, float far, Projection* projection);
 
 void invertOrtho(Projection* proj, Projection* i);
+Projection* getProjection();
 
 #endif

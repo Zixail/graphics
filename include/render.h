@@ -23,6 +23,18 @@ struct shader{
     GLint mode;
 };
 
+struct render_state {
+    struct quad quad;
+    struct grid grid;
+    struct shader shader;
+    GLuint maskTex;
+    unsigned char* textureData;
+    int textureWidth;
+    int textureHeight;
+};
+
+extern struct render_state Render;
+
 char* readShader(const char* path);
 void gridInit();
 void quadInit();
