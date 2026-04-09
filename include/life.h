@@ -1,13 +1,13 @@
 #ifndef LIFE_H
 #define LIFE_H
 
-struct field{
+struct life_state{
     char* current;
     char* next;
     int width, height;
 };
 
-extern struct field Field;
+extern struct life_state Life;
 
 int countNeighbors(int x0, int y0);
 

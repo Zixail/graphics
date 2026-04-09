@@ -2,6 +2,22 @@
 #define CALLBACKS_H
 #include <GLFW/glfw3.h>
 
+struct input_state {
+	float zoom;
+	float cameraX;
+	float cameraY;
+	double lastUpdateTime;
+	double updateInterval;
+	char freeze;
+	char isFullscreen;
+	int windowedX;
+	int windowedY;
+	int windowedWidth;
+	int windowedHeight;
+};
+
+extern struct input_state Input;
+
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mod);
 void buffersizeCallback(GLFWwindow* window, int width, int height);
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);

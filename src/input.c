@@ -8,14 +8,19 @@
 #include "render.h"
 #include "life.h"
 
-static float zoom = 1.0f;
-static float cameraX = 0.0f;
-static float cameraY = 0.0f;
-static double lastUpdateTime = 0.0;
-static double updateInterval = 0.1;
-static char freeze = 0;
-static char isFullscreen = 0;
-static int windowedX, windowedY, windowedWidth, windowedHeight;
+struct input_state Input = {
+    .zoom = 1.0f,
+    .cameraX = 0.0f,
+    .cameraY = 0.0f,
+    .lastUpdateTime = 0.0,
+    .updateInterval = 0.1,
+    .freeze = 0,
+    .isFullscreen = 0,
+    .windowedX = 0,
+    .windowedY = 0,
+    .windowedWidth = 0,
+    .windowedHeight = 0,
+};
 
 static float clampFloat(float value, float minValue, float maxValue) {
     if (value < minValue) return minValue;
@@ -35,8 +40,8 @@ static void clampCameraToGrid(float aspect) {
     float extendedBot = grid->bot - padY;
     float extendedTop = grid->top + padY;
 
-    float halfWidth = aspect * zoom;
-    float halfHeight = zoom;
+    float halfWidth = aspect * Input.zoom;
+    float halfHeight = Input.zoom;
 
     float minCameraX = extendedLeft + halfWidth;
     float maxCameraX = extendedRight - halfWidth;
@@ -44,15 +49,15 @@ static void clampCameraToGrid(float aspect) {
     float maxCameraY = extendedTop - halfHeight;
 
     if (minCameraX > maxCameraX) {
-        cameraX = 0.5f * (grid->left + grid->right);
+        Input.cameraX = 0.5f * (grid->left + grid->right);
     } else {
-        cameraX = clampFloat(cameraX, minCameraX, maxCameraX);
+        Input.cameraX = clampFloat(Input.cameraX, minCameraX, maxCameraX);
     }
 
     if (minCameraY > maxCameraY) {
-        cameraY = 0.5f * (grid->bot + grid->top);
+        Input.cameraY = 0.5f * (grid->bot + grid->top);
     } else {
-        cameraY = clampFloat(cameraY, minCameraY, maxCameraY);
+        Input.cameraY = clampFloat(Input.cameraY, minCameraY, maxCameraY);
     }
 }
 
@@ -61,22 +66,22 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         glfwSetWindowShouldClose(window, 1);
     }
     if(key == GLFW_KEY_SPACE && action == GLFW_PRESS){
-        freeze = !freeze;
+        Input.freeze = !Input.freeze;
     }
     if(key == GLFW_KEY_Z && action == GLFW_PRESS){
-        updateInterval *= (double)2;
-        if (updateInterval > 1.6f) updateInterval = 1.6f;
+        Input.updateInterval *= (double)2;
+        if (Input.updateInterval > 1.6f) Input.updateInterval = 1.6f;
     }
     if(key == GLFW_KEY_X && action == GLFW_PRESS){
-        updateInterval /= (double)2;
-        if (updateInterval < 0.0125f) updateInterval = 0.0125f;
+        Input.updateInterval /= (double)2;
+        if (Input.updateInterval < 0.0125f) Input.updateInterval = 0.0125f;
     }
     if (key == GLFW_KEY_F11 && action == GLFW_PRESS) {
-        isFullscreen = !isFullscreen;
+        Input.isFullscreen = !Input.isFullscreen;
         
-        if (isFullscreen) {
-            glfwGetWindowPos(window, &windowedX, &windowedY);
-            glfwGetWindowSize(window, &windowedWidth, &windowedHeight);
+        if (Input.isFullscreen) {
+            glfwGetWindowPos(window, &Input.windowedX, &Input.windowedY);
+            glfwGetWindowSize(window, &Input.windowedWidth, &Input.windowedHeight);
             
             GLFWmonitor* monitor = glfwGetPrimaryMonitor();
             const GLFWvidmode* mode = glfwGetVideoMode(monitor);
@@ -84,7 +89,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         } else {
-            glfwSetWindowMonitor(window, NULL, windowedX, windowedY, windowedWidth, windowedHeight, 0);
+            glfwSetWindowMonitor(window, NULL, Input.windowedX, Input.windowedY, Input.windowedWidth, Input.windowedHeight, 0);
         }
     }
 }
@@ -99,11 +104,11 @@ void buffersizeCallback(GLFWwindow* window, int width, int height){
     float aspect = (float)width / (float)height;
     clampCameraToGrid(aspect);
 
-    float bottom = cameraY - zoom;
-    float top = cameraY + zoom;
+    float bottom = Input.cameraY - Input.zoom;
+    float top = Input.cameraY + Input.zoom;
 
-    float left = cameraX - aspect * zoom;
-    float right = cameraX + aspect * zoom;
+    float left = Input.cameraX - aspect * Input.zoom;
+    float right = Input.cameraX + aspect * Input.zoom;
 
     float near = -1.0f;
     float far = 1.0f;
@@ -114,9 +119,9 @@ void buffersizeCallback(GLFWwindow* window, int width, int height){
 
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset){
     float zoomSpeed = 0.1f;
-    zoom -= (float)yoffset *zoomSpeed;
-    if (zoom < 0.1f) zoom = 0.1f;
-    if (zoom > 10.0f) zoom = 10.0f;
+    Input.zoom -= (float)yoffset * zoomSpeed;
+    if (Input.zoom < 0.1f) Input.zoom = 0.1f;
+    if (Input.zoom > 10.0f) Input.zoom = 10.0f;
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     buffersizeCallback(window, width, height);
@@ -141,9 +146,9 @@ void updateCamera(GLFWwindow* window, float deltaTime) {
         dirY *= invSqrt2;
     }
 
-    float moveSpeed = 2.0f * zoom;
-    cameraX += dirX * moveSpeed * deltaTime;
-    cameraY += dirY * moveSpeed * deltaTime;
+    float moveSpeed = 2.0f * Input.zoom;
+    Input.cameraX += dirX * moveSpeed * deltaTime;
+    Input.cameraY += dirY * moveSpeed * deltaTime;
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
@@ -203,14 +208,14 @@ void processMouseClick(GLFWwindow* window, int action){
 
     if (cellX >= 0 && cellX < textureWidth && cellY >= 0 && cellY < textureHeight) {                
         int index = cellY * textureWidth + cellX;                
-        Field.current[index] = action;               
+        Life.current[index] = action;               
     }
 }
 
 int isFreeze(){
     double currentTime = glfwGetTime();
-    if(freeze && currentTime - lastUpdateTime >= updateInterval) {
-        lastUpdateTime = currentTime;
+    if(Input.freeze && currentTime - Input.lastUpdateTime >= Input.updateInterval) {
+        Input.lastUpdateTime = currentTime;
         return 0;
     }
     return 1;

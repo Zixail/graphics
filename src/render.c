@@ -35,28 +35,28 @@ char* readShader(const char* path){
 }
 
 void gridInit(){
-    textureWidth = Field.width;
-    textureHeight = Field.height;
+    textureWidth = Life.width;
+    textureHeight = Life.height;
 
     Grid.top =  1.0f * textureHeight / 20;
     Grid.bot = -1.0f * textureHeight / 20;
     Grid.right =  1.0f * textureWidth / 20;
     Grid.left =  -1.0f * textureWidth / 20;
 
-    Grid.count = (Field.width + Field.height) + 2;
+    Grid.count = (Life.width + Life.height) + 2;
     float* lines = calloc(4 * Grid.count, sizeof(float));
     float dx = (Grid.right - Grid.left) / textureWidth;
     float dy = (Grid.top - Grid.bot) / textureHeight;
     
-    for (int i = 0; i <= Field.width; ++i){
+    for (int i = 0; i <= Life.width; ++i){
         lines[i * 4 + 0] = Grid.left + i * dx;
         lines[i * 4 + 1] = Grid.top;
         lines[i * 4 + 2] = Grid.left + i * dx;
         lines[i * 4 + 3] = Grid.bot;
     }
 
-    for (int i = 0; i <= Field.height; ++i){
-        int base = Field.width + i + 1;
+    for (int i = 0; i <= Life.height; ++i){
+        int base = Life.width + i + 1;
         lines[base * 4 + 0] = Grid.left;
         lines[base * 4 + 1] = Grid.bot + i * dy;
         lines[base * 4 + 2] = Grid.right;
@@ -159,7 +159,7 @@ void updateTexture(){
     for(int i = 0; i < textureHeight; i++) {
         for(int j = 0; j < textureWidth; j++) {
             int fieldIdx = i * textureWidth + j;
-            unsigned char cell = Field.current[fieldIdx];
+            unsigned char cell = Life.current[fieldIdx];
             
             int texIdx = (i * textureWidth + j) * 4;
             if (cell == 0){
