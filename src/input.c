@@ -1,4 +1,5 @@
 #include <GLFW/glfw3.h>
+#include <stdio.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
@@ -224,16 +225,39 @@ int isFreeze(){
 void setWindowImage(GLFWwindow* window){
     GLFWimage images[3];
     int channels;
+    int iconCount = 0;
 
-    images[0].pixels = stbi_load("img/icon16.png", &images[0].width, &images[0].height, &channels, 4);
-    images[1].pixels = stbi_load("img/icon32.png", &images[1].width, &images[1].height, &channels, 4);
-    images[2].pixels = stbi_load("img/icon48.png", &images[2].width, &images[2].height, &channels, 4);
+    unsigned char* icon16 = stbi_load("img/icon16.png", &images[iconCount].width, &images[iconCount].height, &channels, 4);
+    if (icon16) {
+        images[iconCount].pixels = icon16;
+        iconCount++;
+    } else {
+        fprintf(stderr, "Failed to load icon: img/icon16.png\n");
+    }
 
-    glfwSetWindowIcon(window, 3, images);
+    unsigned char* icon32 = stbi_load("img/icon32.png", &images[iconCount].width, &images[iconCount].height, &channels, 4);
+    if (icon32) {
+        images[iconCount].pixels = icon32;
+        iconCount++;
+    } else {
+        fprintf(stderr, "Failed to load icon: img/icon32.png\n");
+    }
 
-    stbi_image_free(images[0].pixels);
-    stbi_image_free(images[1].pixels);
-    stbi_image_free(images[2].pixels);
+    unsigned char* icon48 = stbi_load("img/icon48.png", &images[iconCount].width, &images[iconCount].height, &channels, 4);
+    if (icon48) {
+        images[iconCount].pixels = icon48;
+        iconCount++;
+    } else {
+        fprintf(stderr, "Failed to load icon: img/icon48.png\n");
+    }
+
+    if (iconCount > 0) {
+        glfwSetWindowIcon(window, iconCount, images);
+    }
+
+    for (int i = 0; i < iconCount; ++i) {
+        stbi_image_free(images[i].pixels);
+    }
 
 }
 
@@ -242,7 +266,9 @@ void setCallback(GLFWwindow* window){
     glfwSwapInterval(1);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetFramebufferSizeCallback(window, buffersizeCallback);
-    buffersizeCallback(window, 1024, 768);
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    buffersizeCallback(window, width, height);
     glfwSetScrollCallback(window, scrollCallback);
     glClearColor(0.0f, 0.749f, 1.0f, 1.0f);
     glEnable(GL_BLEND);
