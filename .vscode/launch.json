@@ -6,7 +6,7 @@
       "name": "Run app.exe",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}\\build\\app.exe",
+      "program": "${workspaceFolder}\\app.exe",
       "cwd": "${workspaceFolder}\\build",
       "preLaunchTask": "build",
       "MIMode": "gdb",

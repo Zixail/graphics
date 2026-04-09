@@ -31,6 +31,14 @@ struct render_state {
     unsigned char* textureData;
     int textureWidth;
     int textureHeight;
+    GLuint menuVAO;
+    GLuint menuVBO;
+    GLuint menuEBO;
+    GLuint menuStartTex;
+    GLuint menuExitTex;
+    GLuint menuFontTex;
+    int menuReady;
+    int menuFontReady;
 };
 
 extern struct render_state Render;
@@ -43,6 +51,10 @@ void updateMat();
 void updateTexture();
 void renderGrid();
 void renderTexture();
+int menuInit();
+void renderMenu(const char* sizeX, const char* sizeY, int inputMode, int activeField);
+int menuHitTestNdc(float x, float y);
+void cleanupMenuResources();
 void cleanupRenderResources();
 
 #endif

@@ -262,7 +262,6 @@ void setWindowImage(GLFWwindow* window){
 }
 
 void setCallback(GLFWwindow* window){
-    setWindowImage(window);
     glfwSwapInterval(1);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetFramebufferSizeCallback(window, buffersizeCallback);
